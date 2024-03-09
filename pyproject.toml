@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycomets"
+version = "0.0.1"
+description = "A brief description of your package"
+authors = [{name = Shimeng Huang, email = dora.huang.sunshine@gmail.com},
+           {name = Lucas Kook, email = lucasheinrich.kook@gmail.com}]
+license = {file = "LICENSE"}
