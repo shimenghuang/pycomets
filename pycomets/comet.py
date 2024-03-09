@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class comets:
+class Comet:
 
     def __init__(self):
         pass
