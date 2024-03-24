@@ -2,8 +2,10 @@
 # libs
 # ##
 import numpy as np
-from gcm import compute_stat
 from sklearn.linear_model import LinearRegression
+from pycomets.gcm import _gcm_test
+from pycomets.regression import LM
+
 
 # %%
 # DGP
@@ -25,4 +27,11 @@ rY = Y - reg_YonZ.predict(X=Z)
 reg_XonZ = LinearRegression().fit(X=Z, y=X)
 rX = X - reg_XonZ.predict(X=Z)
 
-stat, df = compute_stat(rY, rX)
+pval, stat, df = _gcm_test(rY, rX)
+
+# %%
+mod = LM(fit_intercept=True, copy_X=True)
+mod.fit(Y=Y, X=X)
+mod.residuals(Y, X)
+
+# %%

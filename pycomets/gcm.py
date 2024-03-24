@@ -1,6 +1,7 @@
 import numpy as np
+from scipy.stats import chi2
 # from comet import Comet
-from helper import _reshape_to_vec
+from pycomets.helper import _reshape_to_vec
 
 # class GCM(Comet):
 
@@ -8,7 +9,7 @@ from helper import _reshape_to_vec
 #         print("hello")
 
 
-def compute_stat(rY, rX):
+def _gcm_test(rY, rX):
     """
     TODO
     """
@@ -29,4 +30,5 @@ def compute_stat(rY, rX):
         tstat = np.sqrt(nn) * rvec_m / \
             np.sqrt((rvec ** 2).mean() - rvec_m ** 2)
     stat = np.sum(tstat ** 2)
-    return stat, dim_rX
+    pval = 1 - chi2(dim_rX).cdf(stat)
+    return pval, stat, dim_rX
