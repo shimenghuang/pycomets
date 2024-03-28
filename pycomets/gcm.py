@@ -1,12 +1,54 @@
 import numpy as np
 from scipy.stats import chi2
-# from comet import Comet
-from pycomets.helper import _reshape_to_vec
+import matplotlib.pyplot as plt
+from comet import Comet
+from helper import _reshape_to_vec
+from regression import RegressionMethod, RF
 
-# class GCM(Comet):
 
-#     def __init__(self, Y, X, Z):
-#         print("hello")
+class GCM(Comet):
+
+    def __init__(self):
+        self.pval = None
+        self.stat = None
+        self.df = None
+        self.rY = None
+        self.rX = None
+
+    def test(self, Y, X, Z,
+             reg_yz: RegressionMethod = RF(),
+             reg_xz: RegressionMethod = RF()):
+        """
+        TODO
+        """
+        reg_yz.fit(Y=Y, X=Z)
+        self.rY = reg_yz.residuals(Y=Y, X=Z)
+        if X.ndim == 1:
+            reg_xz.fit(Y=X, X=Z)
+            self.rX = reg_xz.residuals(Y=X, X=Z)
+        else:
+            def _comp_resid(x):
+                reg_xz.fit(Y=x, X=Z)
+                return reg_xz.residuals(Y=x, X=Z)
+            self.rX = np.apply_along_axis(_comp_resid, axis=0, arr=X)
+        self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX)
+
+    def summary(self, digits=3):
+        print("\tGeneralized covariance measure test")
+        print(
+            f'X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}')
+        print(
+            "alternative hypothesis: true E[cov(Y, X | Z)] is not equal to 0")
+
+    def plot(self):
+        fig, ax = plt.subplots(1, 1)
+
+        def _scatter(rx):
+            ax.scatter(x=rx, y=self.rY)
+        np.apply_along_axis(_scatter, axis=0, arr=self.rX)
+        ax.set_xlabel("Residuals X | Z")
+        ax.set_ylabel("Residuals Y | Z")
+        return fig, ax
 
 
 def _gcm_test(rY, rX):
