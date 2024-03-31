@@ -27,6 +27,9 @@ class LM(RegressionMethod):
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
 
+    def predict(self, X):
+        return self.model_fitted.predict(X=X)
+
     def residuals(self, Y, X):
         if self.model_fitted is None:
             raise ValueError("Model not fitted yet!")
@@ -41,6 +44,9 @@ class RF(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+
+    def predict(self, X):
+        return self.model_fitted.predict(X=X)
 
     def residuals(self, Y, X):
         if self.model_fitted is None:
@@ -59,6 +65,9 @@ class RFC(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+
+    def predict(self, X):
+        return self.model_fitted.predict(X=X)
 
     def residuals(self, Y, X):
         if self.model_fitted is None:

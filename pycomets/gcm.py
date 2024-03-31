@@ -17,7 +17,8 @@ class GCM(Comet):
 
     def test(self, Y, X, Z,
              reg_yz: RegressionMethod = RF(),
-             reg_xz: RegressionMethod = RF()):
+             reg_xz: RegressionMethod = RF(),
+             summary_digits=3):
         """
         TODO
         """
@@ -32,6 +33,7 @@ class GCM(Comet):
                 return reg_xz.residuals(Y=x, X=Z)
             self.rX = np.apply_along_axis(_comp_resid, axis=0, arr=X)
         self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX)
+        self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
         print("\tGeneralized covariance measure test")

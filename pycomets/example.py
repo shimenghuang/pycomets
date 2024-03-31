@@ -3,6 +3,7 @@
 # ##
 import numpy as np
 from gcm import GCM
+from pcm import PCM
 from regression import LM, RF, RFC
 
 # %%
@@ -21,8 +22,11 @@ Y = X[:, 0]**2 + Z[:, 1] + rng.normal(0, 1, n)
 
 gcm = GCM()
 gcm.test(Y, X, Z, LM(), LM())
-gcm.summary(digits=2)
 fig, ax = gcm.plot()
+
+pcm = PCM()
+pcm.test(Y, X, Z, rep=3)
+fig, ax = pcm.plot()
 
 # %%
 # DGP: classification
