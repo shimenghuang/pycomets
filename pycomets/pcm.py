@@ -4,6 +4,7 @@ from scipy.optimize import root_scalar
 import matplotlib.pyplot as plt
 from comet import Comet
 from regression import RegressionMethod, RF
+from helper import _data_check
 
 
 class PCM(Comet):
@@ -70,10 +71,11 @@ def _pcm_test(Y, X, Z,
               max_exp=5,
               rng=np.random.default_rng()):
     """
-    TODO: fixme - add a data check X and Z need to be matrices.
+    TODO
     """
 
     # sample splitting
+    Y, X, Z = _data_check(Y, X, Z)
     nn = Y.shape[0]
     idx_tr = rng.choice(np.arange(nn), replace=False,
                         size=int(np.ceil(nn * (1-test_split))))

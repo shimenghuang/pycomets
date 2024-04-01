@@ -4,7 +4,8 @@
 import numpy as np
 from gcm import GCM
 from pcm import PCM
-from regression import LM, RF, RFC
+from regression import LM, RF, RFC, CoxPH
+from sksurv.datasets import load_whas500
 
 # %%
 # DGP: regression
@@ -46,5 +47,14 @@ gcm = GCM()
 gcm.test(Y, X, Z, RF(), RFC())
 gcm.summary(digits=2)
 fig, ax = gcm.plot()
+
+# %%
+# Surv example
+# ##
+
+X, y = load_whas500()
+X = X.astype(float)
+gcm = GCM()
+gcm.test(y, X.iloc[:, 0].to_numpy(), X.iloc[:, 1].to_numpy(), CoxPH(), LM())
 
 # %%

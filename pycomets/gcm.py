@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import chi2
 import matplotlib.pyplot as plt
 from comet import Comet
-from helper import _reshape_to_vec
+from helper import _reshape_to_vec, _data_check
 from regression import RegressionMethod, RF
 
 
@@ -14,6 +14,8 @@ class GCM(Comet):
         self.df = None
         self.rY = None
         self.rX = None
+        self.summary_title = "Generalized covariance measure test"
+        self.hypothesis = "E[cov(Y, X | Z)]"
 
     def test(self, Y, X, Z,
              reg_yz: RegressionMethod = RF(),
@@ -22,8 +24,12 @@ class GCM(Comet):
         """
         TODO
         """
+        Y, X, Z = _data_check(Y, X, Z)
         reg_yz.fit(Y=Y, X=Z)
         self.rY = reg_yz.residuals(Y=Y, X=Z)
+        if reg_yz.resid_type == "score":
+            self.hypothesis = "E[cov(rY, X | Z)]"
+            self.summary_title = "TRAM-Generalized covariance measure test"
         if X.ndim == 1:
             reg_xz.fit(Y=X, X=Z)
             self.rX = reg_xz.residuals(Y=X, X=Z)
@@ -36,11 +42,11 @@ class GCM(Comet):
         self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
-        print("\tGeneralized covariance measure test")
+        print(f"\t{self.summary_title}")
         print(
             f'X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}')
         print(
-            "alternative hypothesis: true E[cov(Y, X | Z)] is not equal to 0")
+            f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
 
     def plot(self):
         fig, ax = plt.subplots(1, 1)
