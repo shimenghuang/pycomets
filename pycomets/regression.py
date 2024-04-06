@@ -4,6 +4,31 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sksurv.linear_model import CoxPHSurvivalAnalysis
 
 
+class DefaultMultiRegression():
+
+    def __init__(self, model, dim):
+        self.dim = dim
+        self.model = model
+        self.models_fitted = None
+
+    def fit(self, Y, X):
+        if Y.ndim == 1:
+            Y = Y[:, np.newaxis]
+        self.models_fitted = [self.model.fit(
+            Y=Y[:, ii], X=X) for ii in np.arange(self.dim)]
+        return self
+
+    def predict(self, X):
+        return np.column_stack(
+            [mod.predict(X=X) for mod in self.models_fitted])
+
+    def residuals(self, Y, X):
+        if Y.ndim == 1:
+            Y = Y[:, np.newaxis]
+        return np.column_stack([self.models_fitted[ii].residuals(
+            Y=Y[:, ii], X=X) for ii in np.arange(self.dim)])
+
+
 class RegressionMethod():
 
     def __init__(self, model):
@@ -29,6 +54,7 @@ class LM(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+        return self
 
     def predict(self, X):
         return self.model_fitted.predict(X=X)
@@ -48,6 +74,7 @@ class RF(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+        return self
 
     def predict(self, X):
         return self.model_fitted.predict(X=X)
@@ -70,6 +97,7 @@ class RFC(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+        return self
 
     def predict(self, X):
         return self.model_fitted.predict(X=X)
@@ -89,6 +117,7 @@ class CoxPH(RegressionMethod):
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
+        return self
 
     def predict(self, X):
         return self.model_fitted.predict(X=X)

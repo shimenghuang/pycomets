@@ -17,3 +17,11 @@ def _data_check(Y, X, Z):
     if Z.ndim == 1:
         Z_new = Z_new[:, np.newaxis]
     return Y_new, X_new, Z_new
+
+
+def _split_sample(Y, X, Z, test_split=0.5, rng=np.random.default_rng()):
+    nn = Y.shape[0]
+    idx_tr = rng.choice(np.arange(nn), replace=False,
+                        size=int(np.ceil(nn * (1-test_split))))
+    idx_te = np.setdiff1d(np.arange(nn), idx_tr, assume_unique=True)
+    return Y[idx_tr], X[idx_tr, :], Z[idx_tr, :], Y[idx_te], X[idx_te, :], Z[idx_te, :]

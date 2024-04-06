@@ -4,7 +4,7 @@ from scipy.optimize import root_scalar
 import matplotlib.pyplot as plt
 from comet import Comet
 from regression import RegressionMethod, RF
-from helper import _data_check
+from helper import _data_check, _split_sample
 
 
 class PCM(Comet):
@@ -76,16 +76,7 @@ def _pcm_test(Y, X, Z,
 
     # sample splitting
     Y, X, Z = _data_check(Y, X, Z)
-    nn = Y.shape[0]
-    idx_tr = rng.choice(np.arange(nn), replace=False,
-                        size=int(np.ceil(nn * (1-test_split))))
-    idx_te = np.setdiff1d(np.arange(nn), idx_tr, assume_unique=True)
-    Ytr = Y[idx_tr]
-    Xtr = X[idx_tr, :]
-    Ztr = Z[idx_tr, :]
-    Yte = Y[idx_te]
-    Xte = X[idx_te, :]
-    Zte = Z[idx_te, :]
+    Ytr, Xtr, Ztr, Yte, Xte, Zte = _split_sample(Y, X, Z, test_split, rng)
 
     # regression on the training data (direction estimate)
     XZtr = np.column_stack([Xtr, Ztr])

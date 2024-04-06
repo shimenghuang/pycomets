@@ -2,8 +2,8 @@ import numpy as np
 from scipy.stats import chi2
 import matplotlib.pyplot as plt
 from comet import Comet
-from helper import _reshape_to_vec, _data_check
-from regression import RegressionMethod, RF
+from helper import _reshape_to_vec, _data_check, _split_sample
+from regression import RegressionMethod, RF, DefaultMultiRegression
 
 
 class GCM(Comet):
@@ -20,6 +20,7 @@ class GCM(Comet):
     def test(self, Y, X, Z,
              reg_yz: RegressionMethod = RF(),
              reg_xz: RegressionMethod = RF(),
+             mreg_xz=None,
              summary_digits=3):
         """
         TODO
@@ -30,14 +31,10 @@ class GCM(Comet):
         if reg_yz.resid_type == "score":
             self.hypothesis = "E[cov(rY, X | Z)]"
             self.summary_title = "TRAM-Generalized covariance measure test"
-        if X.ndim == 1:
-            reg_xz.fit(Y=X, X=Z)
-            self.rX = reg_xz.residuals(Y=X, X=Z)
-        else:
-            def _comp_resid(x):
-                reg_xz.fit(Y=x, X=Z)
-                return reg_xz.residuals(Y=x, X=Z)
-            self.rX = np.apply_along_axis(_comp_resid, axis=0, arr=X)
+        if mreg_xz is None:
+            mreg_xz = DefaultMultiRegression(reg_xz, X.shape[1])
+        mreg_xz.fit(Y=X, X=Z)
+        self.rX = mreg_xz.residuals(Y=X, X=Z)
         self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX)
         self.summary(digits=summary_digits)
 
@@ -55,6 +52,77 @@ class GCM(Comet):
             ax.scatter(x=rx, y=self.rY)
         np.apply_along_axis(_scatter, axis=0, arr=self.rX)
         ax.set_xlabel("Residuals X | Z")
+        ax.set_ylabel("Residuals Y | Z")
+        return fig, ax
+
+
+class WGCM(Comet):
+
+    def __init__(self):
+        self.pval = None
+        self.stat = None
+        self.df = None
+        self.rY = None
+        self.rX = None
+        self.W = None
+        self.summary_title = "Generalized covariance measure test"
+        self.hypothesis = "E[w(Z) cov(Y, X | Z)]"
+
+    def test(self, Y, X, Z,
+             reg_yz: RegressionMethod = RF(),
+             reg_xz: RegressionMethod = RF(),
+             reg_wz: RegressionMethod = RF(),
+             mreg_xz=None,
+             mreg_wz=None,
+             test_split=0.5,
+             rng=np.random.default_rng(),
+             summary_digits=3):
+        """
+        TODO
+        """
+        Y, X, Z = _data_check(Y, X, Z)
+        # estimate weight function
+        Ytr, Xtr, Ztr, Yte, Xte, Zte = _split_sample(
+            Y, X, Z, test_split, rng)
+        reg_yz.fit(Y=Ytr, X=Ztr)
+        rYw = reg_yz.residuals(Y=Ytr, X=Ztr)
+
+        if mreg_xz is None:
+            mreg_xz = DefaultMultiRegression(reg_xz, dim=X.shape[1])
+        if mreg_wz is None:
+            mreg_wz = DefaultMultiRegression(reg_wz, dim=X.shape[1])
+
+        mreg_xz.fit(Y=Xtr, X=Ztr)
+        rXw = mreg_xz.residuals(Y=Xtr, X=Ztr)
+        if rYw.ndim == 1:
+            rYw = rYw[:, np.newaxis]
+        res_prod = rXw * rYw
+        mreg_wz.fit(Y=res_prod, X=Ztr)
+        self.W = np.sign(mreg_wz.predict(X=Zte))
+        reg_yz.fit(Y=Yte, X=Zte)
+        self.rY = reg_yz.residuals(Y=Yte, X=Zte)
+        if reg_yz.resid_type == "score":
+            self.hypothesis = "E[w(Z) cov(rY, X | Z)]"
+            self.summary_title = "Weighted TRAM-generalized covariance measure test"
+        mreg_xz.fit(Y=Xte, X=Zte)
+        self.rX = mreg_xz.residuals(Y=Xte, X=Zte)
+        self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX * self.W)
+        self.summary(digits=summary_digits)
+
+    def summary(self, digits=3):
+        print(f"\t{self.summary_title}")
+        print(
+            f'X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}')
+        print(
+            f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
+
+    def plot(self):
+        fig, ax = plt.subplots(1, 1)
+
+        def _scatter(rx):
+            ax.scatter(x=rx, y=self.rY)
+        np.apply_along_axis(_scatter, axis=0, arr=self.rX * self.W)
+        ax.set_xlabel("Weighted Residuals X | Z")
         ax.set_ylabel("Residuals Y | Z")
         return fig, ax
 
