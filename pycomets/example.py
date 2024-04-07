@@ -29,6 +29,10 @@ gcm = GCM()
 gcm.test(Y, X[:, 0], Z[:, 0], LM(), LM())
 fig, ax = gcm.plot()
 
+gcm = GCM()
+gcm.test(Y, X, Z, LM(), None, RF(random_state=1))
+fig, ax = gcm.plot()
+
 pcm = PCM()
 pcm.test(Y, X, Z, rep=3, rng=rng)
 fig, ax = pcm.plot()
