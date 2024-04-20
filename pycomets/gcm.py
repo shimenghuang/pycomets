@@ -3,7 +3,7 @@ from scipy.stats import chi2
 import matplotlib.pyplot as plt
 from comet import Comet
 from helper import _reshape_to_vec, _data_check, _split_sample
-from regression import RegressionMethod, RF, DefaultMultiRegression
+from regression import RegressionMethod, RF, DefaultMultiRegression, KRR
 
 
 class GCM(Comet):
@@ -71,7 +71,7 @@ class WGCM(Comet):
     def test(self, Y, X, Z,
              reg_yz: RegressionMethod = RF(),
              reg_xz: RegressionMethod = RF(),
-             reg_wz: RegressionMethod = RF(),
+             reg_wz: RegressionMethod = KRR(kernel="rbf", param_grid={'alpha': [0.1, 1]}),
              mreg_xz=None,
              mreg_wz=None,
              test_split=0.5,
