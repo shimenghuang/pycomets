@@ -25,3 +25,13 @@ def _split_sample(Y, X, Z, test_split=0.5, rng=np.random.default_rng()):
                         size=int(np.ceil(nn * (1-test_split))))
     idx_te = np.setdiff1d(np.arange(nn), idx_tr, assume_unique=True)
     return Y[idx_tr], X[idx_tr, :], Z[idx_tr, :], Y[idx_te], X[idx_te, :], Z[idx_te, :]
+
+
+def _get_valid_args(func, args_dict):
+    '''
+    Return dictionary without invalid function arguments.
+    Modified from https://stackoverflow.com/a/196978
+    '''
+    validArgs = func.__code__.co_varnames[:func.__code__.co_argcount]
+    return dict((key, value) for key, value in args_dict.items()
+                if key in validArgs)
