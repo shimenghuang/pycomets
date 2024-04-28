@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sksurv.linear_model import CoxPHSurvivalAnalysis
+from xgboost import XGBRegressor, XGBClassifier
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import GridSearchCV
 from helper import _get_valid_args
@@ -153,3 +154,47 @@ class KRR(RegressionMethod):
         if self.model_fitted is None:
             raise ValueError("Model not fitted yet!")
         return Y - self.model_fitted.predict(X=X)
+
+
+class XGB(RegressionMethod):
+
+    def __init__(self, **kwargs):
+        kwargs_xgb = _get_valid_args(XGBRegressor.__init__, kwargs)
+        kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        model = GridSearchCV(XGBRegressor(**kwargs_xgb), **kwargs_cv)
+        super().__init__(model)
+        self.resid_type = "vanilla"
+
+    def fit(self, Y, X):
+        self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        return self
+
+    def predict(self, X):
+        return self.model_fitted.predict(X=X)
+
+    def residuals(self, Y, X):
+        if self.model_fitted is None:
+            raise ValueError("Model not fitted yet!")
+        return Y - self.model_fitted.predict(X=X)
+
+
+class XGBC(RegressionMethod):
+
+    def __init__(self, **kwargs):
+        kwargs_xgb = _get_valid_args(XGBClassifier.__init__, kwargs)
+        kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        model = GridSearchCV(XGBClassifier(**kwargs_xgb), **kwargs_cv)
+        super().__init__(model)
+        self.resid_type = "vanilla"
+
+    def fit(self, Y, X):
+        self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        return self
+
+    def predict(self, X):
+        return self.model_fitted.predict(X=X)
+
+    def residuals(self, Y, X):
+        if self.model_fitted is None:
+            raise ValueError("Model not fitted yet!")
+        return Y - self.model_fitted.predict_proba(X=X)[:, 1]

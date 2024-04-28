@@ -4,7 +4,7 @@
 import numpy as np
 from gcm import GCM, WGCM
 from pcm import PCM
-from regression import DefaultMultiRegression, LM, RF, RFC, CoxPH, KRR
+from regression import DefaultMultiRegression, LM, RF, RFC, CoxPH, KRR, XGB, XGBC
 from sksurv.datasets import load_whas500
 
 # %%
@@ -35,8 +35,15 @@ fig, ax = gcm.plot()
 
 gcm = GCM()
 gcm.test(Y, X, Z,
-         KRR(kernel="rbf", param_grid={'alpha': [0.1, 1]}),
+         KRR(kernel="rbf", param_grid={'alpha': [0.1, 1, 10]}),
          KRR(param_grid={'kernel': ('linear', 'rbf'), 'alpha': [0.1, 1]}))
+fig, ax = gcm.plot()
+
+gcm = GCM()
+gcm.test(Y, X, Z,
+         XGB(param_grid={'n_estimators': [10, 100], 'max_depth': [2, 5]}),
+         XGB(param_grid={'n_estimators': [10, 100], 'max_depth': [2, 5]}))
+fig, ax = gcm.plot()
 
 pcm = PCM()
 pcm.test(Y, X, Z, rep=3, rng=rng)
@@ -75,6 +82,12 @@ Y = X[:, 0]**2 + Z[:, 1] + rng.normal(0, 1, n)
 gcm = GCM()
 gcm.test(Y, X, Z, RF(), RFC())
 gcm.summary(digits=2)
+fig, ax = gcm.plot()
+
+gcm = GCM()
+gcm.test(Y, X, Z,
+         XGB(param_grid={'n_estimators': [10, 100], 'max_depth': [2, 5]}),
+         XGBC(param_grid={'n_estimators': [10, 100], 'max_depth': [2, 5]}))
 fig, ax = gcm.plot()
 
 # %%
