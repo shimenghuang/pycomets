@@ -8,6 +8,46 @@ from regression import RegressionMethod, RF, DefaultMultiRegression, KRR
 
 class GCM(Comet):
 
+    """
+    Generalised covariance measure (GCM).
+
+    The generalised covariance measure test tests whether the conditional
+    covariance of Y and X given Z is zero.
+
+    Parameters:
+    ----------
+
+    Attributes:
+    ----------
+    pval : float
+        The p-value of the `hypothesis`.
+
+    stat : float
+        The value of the test statistic.
+
+    df : int
+        The degree of freedom.
+
+    rY : array of shape (n_sample,)
+        Residuals of the Y on Z regression.
+
+    rX : array of shape (n_sample, n_feature_x)
+        Residuals of the X on Z regression.
+
+    summary_title : string
+        The string "Generalized covariance measure test".
+
+    hypothesis : string
+        String specifying the null hypothesis.
+
+    References:
+    ----------
+    Rajen D. Shah, Jonas Peters "The hardness of conditional independence
+    testing and the generalised covariance measure," The Annals of Statistics,
+    48(3) 1514-1538.
+    [doi:10.1214/19-aos1857](https://doi.org/10.1214/19-aos1857)
+    """
+
     def __init__(self):
         self.pval = None
         self.stat = None
@@ -23,7 +63,21 @@ class GCM(Comet):
              mreg_xz=None,
              summary_digits=3):
         """
-        TODO
+        Computation of the GCM test.
+
+        Parameters
+        ----------
+        Y : array of shape (n_sample,) or (n_sample, 1)
+            Response values. 
+
+        X : array of shape (n_sample, n_feature_x)
+            Values of the first set of covariates.
+
+        Z : array of shape (n_sample, n_feature_z)
+            Values of the second set of covariates. 
+
+        Returns
+        -------
         """
         Y, X, Z = _data_check(Y, X, Z)
         reg_yz.fit(Y=Y, X=Z)
@@ -39,6 +93,9 @@ class GCM(Comet):
         self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
+        """
+        Print the test results.
+        """
         print(f"\t{self.summary_title}")
         print(
             f'X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}')
@@ -46,6 +103,9 @@ class GCM(Comet):
             f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
 
     def plot(self):
+        """
+        Plot the residuals of X on Z regression versus Y on Z regression.
+        """
         fig, ax = plt.subplots(1, 1)
 
         def _scatter(rx):
@@ -58,6 +118,48 @@ class GCM(Comet):
 
 class WGCM(Comet):
 
+    """
+    Weighted generalised covariance measure (WGCM).
+
+    The weighted generalised covariance measure test tests whether a weighted
+    version of the conditional covariance of Y and X given Z is zero.
+
+    Parameters:
+    ----------
+
+    Attributes:
+    ----------
+    pval : float
+        The p-value of the `hypothesis`.
+
+    stat : float
+        The value of the test statistic.
+
+    df : int
+        The degree of freedom.
+
+    rY : array of shape (n_sample,)
+        Residuals of the Y on Z regression.
+
+    rX : array of shape (n_sample, n_feature_x)
+        Residuals of the X on Z regression.
+
+    W : array of shape (n_sample, n_feature_x)
+        Estimated weight matrix.
+
+    summary_title : string
+        The string "Weighted generalized covariance measure test".
+
+    hypothesis : string
+        String specifying the null hypothesis.
+
+    References:
+    ----------
+    Scheidegger, C., Hörrmann, J., & Bühlmann, P. (2022). The weighted
+    generalised covariance measure. Journal of Machine Learning Research,
+    23(273), 1-68. 
+    """
+
     def __init__(self):
         self.pval = None
         self.stat = None
@@ -65,20 +167,64 @@ class WGCM(Comet):
         self.rY = None
         self.rX = None
         self.W = None
-        self.summary_title = "Generalized covariance measure test"
+        self.summary_title = "Weighted generalized covariance measure test"
         self.hypothesis = "E[w(Z) cov(Y, X | Z)]"
 
     def test(self, Y, X, Z,
              reg_yz: RegressionMethod = RF(),
              reg_xz: RegressionMethod = RF(),
-             reg_wz: RegressionMethod = KRR(kernel="rbf", param_grid={'alpha': [0.1, 1]}),
+             reg_wz: RegressionMethod = KRR(
+                 kernel="rbf", param_grid={'alpha': [0.1, 1]}),
              mreg_xz=None,
              mreg_wz=None,
              test_split=0.5,
              rng=np.random.default_rng(),
              summary_digits=3):
         """
-        TODO
+        Computation of the WGCM test.
+
+        Parameters
+        ----------
+        Y : array of shape (n_sample,) or (n_sample, 1)
+            Response values. 
+
+        X : array of shape (n_sample, n_feature_x)
+            Values of the first set of covariates.
+
+        Z : array of shape (n_sample, n_feature_z)
+            Values of the second set of covariates. 
+
+        reg_yz : RegressionMethod
+            Regression method for Y on Z regression. Default to be `RF()`.
+
+        reg_xz : RegressionMethod
+            Regression method for X on Z regression. Default to be `RF()`.
+
+        reg_wz : RegressionMethod
+            Regression method for the residual product on Z regression. Default
+            to be `KRR(kernel="rbf", param_grid={'alpha': [0.1, 1]})`.
+
+        mreg_xz : RegressionMethod
+            Multivarite regression method for X on Z regression. If `None`,
+            `DefaultMultiRegression` is used as a wrapper for the given
+            `reg_xz`.
+
+        mreg_wz : RegressionMethod
+            Multivarite regression method for the residual product on Z Z
+            regression. If `None`, `DefaultMultiRegression` is used as a wrapper
+            for the given `reg_xz`.
+
+        test_split : float
+            Relative size of test split.
+
+        rng : numpy.random._generator.Generator
+            Random number generator.
+
+        summary_digits : int 
+            Number of digits to display in the printed summary.
+
+        Returns
+        -------
         """
         Y, X, Z = _data_check(Y, X, Z)
         # estimate weight function
@@ -110,6 +256,9 @@ class WGCM(Comet):
         self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
+        """
+        Print the test results.
+        """
         print(f"\t{self.summary_title}")
         print(
             f'X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}')
@@ -117,6 +266,9 @@ class WGCM(Comet):
             f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
 
     def plot(self):
+        """
+        Plot the residuals of X on Z regression versus Y on Z regression.
+        """
         fig, ax = plt.subplots(1, 1)
 
         def _scatter(rx):
@@ -129,7 +281,7 @@ class WGCM(Comet):
 
 def _gcm_test(rY, rX):
     """
-    TODO
+    Computation of the GCM test based on residuals.
     """
     nn = rY.shape[0]
     rY = _reshape_to_vec(rY)

@@ -9,6 +9,39 @@ from helper import _data_check, _split_sample
 
 class PCM(Comet):
 
+    """
+    Projected covariance measure test for conditional mean independence.
+
+    Parameters:
+    ----------
+
+    Attributes:
+    ----------
+    pval : float
+        The p-value of the `hypothesis`.
+
+    stat : float
+        The value of the test statistic.
+
+    df : int
+        The degree of freedom.
+
+    rY : array of shape (n_sample,)
+        Residuals of the Y on Z regression.
+
+    rT : array of shape (n_sample,)
+        Residuals of the transformation of Y and Z on Z regression.
+
+
+    References:
+    ----------
+    Lundborg, A. R., Kim, I., Shah, R. D., & Samworth, R. J. (2022). The
+    Projected Covariance Measure for assumption-lean variable significance
+    testing. arXiv preprint.
+    [10.48550/arXiv.2211.02039](https://arxiv.org/abs/2211.02039)
+
+    """
+
     def __init__(self):
         self.pval = None
         self.stat = None
@@ -30,7 +63,24 @@ class PCM(Comet):
              rng=np.random.default_rng(),
              summary_digits=3):
         """
-        TODO
+        Computation of the PCM test.
+
+        Parameters
+        ----------
+        Y : array of shape (n_sample,) or (n_sample, 1)
+            Response values. 
+
+        X : array of shape (n_sample, n_feature_x)
+            Values of the first set of covariates.
+
+        Z : array of shape (n_sample, n_feature_z)
+            Values of the second set of covariates. 
+
+        rep : int
+            Number of repetitions with which to repeat the PCM test.
+
+        Returns
+        -------
         """
         self.pvals = np.empty(rep)
         self.stats = np.empty(rep)
