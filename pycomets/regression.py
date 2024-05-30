@@ -91,7 +91,7 @@ class RF(RegressionMethod):
 
 class RFC(RegressionMethod):
     """
-    Binary classification. TODO: error if Y is more than two classes.
+    Binary classification.
     """
 
     def __init__(self, **kwargs):

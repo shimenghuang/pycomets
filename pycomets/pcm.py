@@ -121,7 +121,7 @@ def _pcm_test(Y, X, Z,
               max_exp=5,
               rng=np.random.default_rng()):
     """
-    TODO
+    Computation of the PCM test with data splitting.
     """
 
     # sample splitting

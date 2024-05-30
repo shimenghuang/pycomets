@@ -79,11 +79,11 @@ The development version of `pycomets` can be installed using:
 python -m pip install -e <path-to-pycomets> 
 ```
 
-A stable version of `pycomets` can be installed from PyPI via:
+<!-- A stable version of `pycomets` can be installed from PyPI via: -->
 
-```python
-pip install pycomets
-```
+<!-- ```python -->
+<!-- pip install pycomets -->
+<!-- ``` -->
 
 # References
 

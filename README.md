@@ -34,7 +34,7 @@ gcm.test(Y, X, Z)
 ```
 
     ##  Generalized covariance measure test
-    ## X-squared = 0.337, df = 2, p-value = 0.845
+    ## X-squared = 0.555, df = 2, p-value = 0.758
     ## alternative hypothesis: true E[cov(Y, X | Z)] is not equal to 0
 
 ``` python
@@ -50,7 +50,7 @@ pcm.test(Y, X, Z, rng=rng)
 ```
 
     ##  Projected covariance measure test
-    ## Z = 2.574, p-value = 0.005
+    ## Z = 2.885, p-value = 0.002
     ## alternative hypothesis: true E[Y | X, Z] is not equal to E[Y | Z]
 
 ``` python
@@ -86,11 +86,10 @@ The development version of `pycomets` can be installed using:
 python -m pip install -e <path-to-pycomets> 
 ```
 
-A stable version of `pycomets` can be installed from PyPI via:
-
-``` python
-pip install pycomets
-```
+<!-- A stable version of `pycomets` can be installed from PyPI via: -->
+<!-- ```python -->
+<!-- pip install pycomets -->
+<!-- ``` -->
 
 # References
 
