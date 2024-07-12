@@ -1,4 +1,4 @@
-# Covariance Measure Tests (COMETs) in Python
+# Covariance Measure Tests (COMETs) in Python <img src='pycomets/inst/pycomets-pkg.png' align="right" height="138.5" />
 
 The Generalised \[1\] and Projected \[2\] Covariance Measure tests (GCM,
 PCM) can be used to test conditional independence between a real-valued
@@ -34,7 +34,7 @@ gcm.test(Y, X, Z)
 ```
 
     ##  Generalized covariance measure test
-    ## X-squared = 0.555, df = 2, p-value = 0.758
+    ## X-squared = 0.832, df = 2, p-value = 0.660
     ## alternative hypothesis: true E[cov(Y, X | Z)] is not equal to 0
 
 ``` python
@@ -50,7 +50,7 @@ pcm.test(Y, X, Z, rng=rng)
 ```
 
     ##  Projected covariance measure test
-    ## Z = 2.885, p-value = 0.002
+    ## Z = 3.141, p-value = 0.001
     ## alternative hypothesis: true E[Y | X, Z] is not equal to E[Y | Z]
 
 ``` python

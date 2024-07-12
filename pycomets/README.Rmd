@@ -11,7 +11,7 @@ from pcm import PCM
 from regression import DefaultMultiRegression, LM, RF, RFC, CoxPH, KRR, XGB, XGBC
 ```
 
-# Covariance Measure Tests (COMETs) in Python
+# Covariance Measure Tests (COMETs) in Python <img src='pycomets/inst/pycomets-pkg.png' align="right" height="138.5" />
 
 The Generalised [1] and Projected [2] Covariance Measure tests (GCM, PCM) can be
 used to test conditional independence between a real-valued response $Y$ and
