@@ -79,6 +79,32 @@ class PCM(Comet):
         rep : int
             Number of repetitions with which to repeat the PCM test.
 
+        reg_yonxz : RegressionMethod
+            TODO
+
+        reg_yonz : RegressionMethod
+            TODO
+
+        reg_yhatonz : RegressionMethod
+            TODO
+
+        reg_vonxz : RegressionMethod
+            TODO
+
+        reg_ronz : RegressionMethod
+            TODO
+
+        estimate_variance : bool 
+
+        test_split : float
+            Relative size of test split.
+
+        rng : numpy.random._generator.Generator
+            Random number generator.
+
+        summary_digits : int 
+            Number of digits to display in the printed summary.
+
         Returns
         -------
         """
