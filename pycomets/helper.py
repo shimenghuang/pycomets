@@ -35,3 +35,10 @@ def _get_valid_args(func, args_dict):
     validArgs = func.__code__.co_varnames[:func.__code__.co_argcount]
     return dict((key, value) for key, value in args_dict.items()
                 if key in validArgs)
+
+
+def _cov_to_cor(sig):
+    stds = np.sqrt(np.diag(sig))
+    stds_inv = 1/stds
+    cor = stds_inv * sig * stds_inv
+    return cor
