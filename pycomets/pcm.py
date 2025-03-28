@@ -1,10 +1,11 @@
-import numpy as np
-from scipy.stats import norm
-from scipy.optimize import root_scalar
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import root_scalar
+from scipy.stats import norm
+
 from .comet import Comet
-from .regression import RegressionMethod, RF
 from .helper import _data_check, _split_sample
+from .regression import RF, RegressionMethod
 
 
 class PCM(Comet):
@@ -206,7 +207,8 @@ def _pcm_test(
                     raise ValueError(
                         "Cannot compute variance estimate, try rerunning with `estimate_variance=False`."
                     )
-            chat = root_scalar(a, method="brentq", bracket=[lwr, upr])
+            chat = root_scalar(a, method="brentq", bracket=[lwr, upr]).root
+            print(f"chat = {chat:.3f}")
 
         def vhat(X, Z):
             XZ = np.column_stack([X, Z])
@@ -215,6 +217,7 @@ def _pcm_test(
                 axis=1,
             )
             return vtemp + chat
+
     else:
 
         def vhat(X, Z):
