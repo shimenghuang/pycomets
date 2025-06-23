@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 from scipy.optimize import root_scalar
 from scipy.stats import norm
 
 from .comet import Comet
-from .helper import _data_check, _split_sample
+from .utils import _data_check, _split_sample
 from .regression import RF, RegressionMethod
 
 
@@ -142,12 +143,32 @@ class PCM(Comet):
         print(f"Z = {self.stat:.{digits}f}, p-value = {self.pval:.{digits}f}")
         print("alternative hypothesis: true E[Y | X, Z] is not equal to E[Y | Z]")
 
-    def plot(self):
+    # def plot(self):
+    #     fig, ax = plt.subplots(1, 1)
+    #     for idx in range(self.rT.shape[1]):
+    #         ax.scatter(x=self.rT[:, idx], y=self.rY[:, idx])
+    #     ax.set_xlabel("Residuals f(X, Z) | Z")
+    #     ax.set_ylabel("Residuals Y | Z")
+    #     return fig, ax
+
+    def plot(self, colors=None, **kwargs):
+        """
+        Plot the residuals of X on Z regression versus Y on Z regression.
+        """
         fig, ax = plt.subplots(1, 1)
+        if colors is None:
+            colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
+        s = kwargs.pop("s", 1.0)
         for idx in range(self.rT.shape[1]):
-            ax.scatter(x=self.rT[:, idx], y=self.rY[:, idx])
+            ax.scatter(x=self.rT[:, idx], 
+                       y=self.rY[:, idx],
+                       label = rf"$f(X,Z)^{{{idx}}}$",
+                       color=colors[idx % len(colors)],
+                       s = s,
+                       **kwargs)
         ax.set_xlabel("Residuals f(X, Z) | Z")
         ax.set_ylabel("Residuals Y | Z")
+        ax.legend()
         return fig, ax
 
 
@@ -171,6 +192,8 @@ def _pcm_test(
 
     # sample splitting
     Y, X, Z = _data_check(Y, X, Z)
+    if Y.ndim > 1:
+        raise ValueError(f'PCM does not support multi-dimensional Y.')
     Ytr, Xtr, Ztr, Yte, Xte, Zte = _split_sample(Y, X, Z, test_split, rng)
 
     # regression on the training data (direction estimate)

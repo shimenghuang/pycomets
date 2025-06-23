@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats as sp
-from .helper import _cov_to_cor
+from .utils import _cov_to_cor
 
 
 def _coin_test(

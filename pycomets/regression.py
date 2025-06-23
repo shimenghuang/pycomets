@@ -5,7 +5,7 @@ from sksurv.linear_model import CoxPHSurvivalAnalysis
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import GridSearchCV
-from .helper import _get_valid_args
+from .utils import _get_valid_args, _safe_atleast_2d
 
 
 class DefaultMultiRegression:
@@ -15,8 +15,9 @@ class DefaultMultiRegression:
         self.models_fitted = None
 
     def fit(self, Y, X):
-        if Y.ndim == 1:
-            Y = Y[:, np.newaxis]
+        # if Y.ndim == 1:
+        #     Y = Y[:, np.newaxis]
+        Y = _safe_atleast_2d(Y)
         self.models_fitted = [
             self.model.fit(Y=Y[:, ii], X=X) for ii in np.arange(self.dim)
         ]
@@ -26,8 +27,9 @@ class DefaultMultiRegression:
         return np.column_stack([mod.predict(X=X) for mod in self.models_fitted])
 
     def residuals(self, Y, X):
-        if Y.ndim == 1:
-            Y = Y[:, np.newaxis]
+        # if Y.ndim == 1:
+        #     Y = Y[:, np.newaxis]
+        Y = _safe_atleast_2d(Y)
         return np.column_stack(
             [
                 self.models_fitted[ii].residuals(Y=Y[:, ii], X=X)
@@ -37,6 +39,13 @@ class DefaultMultiRegression:
 
 
 class RegressionMethod:
+    """
+    Example:
+        mod = DefaultMultiRegression(LM(), X.shape[1])
+        mod.fit(Y=X, X=Z)
+        mod.predict(X=Z)
+        mod.residuals(Y=X, X=Z)
+    """
     def __init__(self, model):
         self.model = model
         self.model_fitted = None

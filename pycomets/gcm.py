@@ -1,9 +1,11 @@
 import numpy as np
-from scipy.stats import chi2, spearmanr, pearsonr
+from scipy.stats import chi2, norm, spearmanr, pearsonr
 import matplotlib.pyplot as plt
 from .comet import Comet
-from .helper import _reshape_to_vec, _data_check, _split_sample
+from .utils import _safe_atleast_2d, _safe_squeeze, _data_check, _split_sample
 from .regression import RegressionMethod, RF, DefaultMultiRegression, KRR
+import matplotlib.cm as cm
+import itertools
 
 
 class GCM(Comet):
@@ -64,6 +66,9 @@ class GCM(Comet):
         reg_yz: RegressionMethod = RF(),
         reg_xz: RegressionMethod = RF(),
         mreg_xz=None,
+        alternative="two.sided",
+        test_type="quadratic",
+        B=499,
         summary_digits=3,
     ):
         """
@@ -90,10 +95,16 @@ class GCM(Comet):
             self.hypothesis = "E[cov(rY, X | Z)]"
             self.summary_title = "TRAM-Generalized covariance measure test"
         if mreg_xz is None:
-            mreg_xz = DefaultMultiRegression(reg_xz, X.shape[1])
+            dim_X = 1 if X.ndim == 1 else X.shape[1]
+            mreg_xz = DefaultMultiRegression(reg_xz, dim_X)
         mreg_xz.fit(Y=X, X=Z)
+        # Note: here assumes that mreg_xz
         self.rX = mreg_xz.residuals(Y=X, X=Z)
-        self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX)
+        self.pval, self.stat, self.df = _gcm_test(rY=self.rY, 
+                                                  rX=self.rX, 
+                                                  alternative=alternative, 
+                                                  test_type=test_type, 
+                                                  B=B)
         self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
@@ -106,18 +117,27 @@ class GCM(Comet):
         )
         print(f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
 
-    def plot(self):
+    def plot(self, colors=None, **kwargs):
         """
         Plot the residuals of X on Z regression versus Y on Z regression.
         """
         fig, ax = plt.subplots(1, 1)
-
-        def _scatter(rx):
-            ax.scatter(x=rx, y=self.rY)
-
-        np.apply_along_axis(_scatter, axis=0, arr=self.rX)
+        if colors is None:
+            colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
+        s = kwargs.pop("s", 1.0)
+        rX = _safe_atleast_2d(self.rX)
+        rY = _safe_atleast_2d(self.rY)
+        for k, (i, j) in enumerate(itertools.product(range(rX.shape[1]), 
+                                                     range(rY.shape[1]))):
+            ax.scatter(rX[:, i], 
+                       rY[:, j], 
+                       label = rf"$X^{{{i}}}$ and $Y^{{{j}}}$",
+                       color=colors[k % len(colors)],
+                       s = s,
+                       **kwargs)
         ax.set_xlabel("Residuals X | Z")
         ax.set_ylabel("Residuals Y | Z")
+        ax.legend()
         return fig, ax
 
     def get_resids(self):
@@ -204,6 +224,9 @@ class WGCM(Comet):
         mreg_wz=None,
         test_split=0.5,
         rng=np.random.default_rng(),
+        alternative="two.sided",
+        test_type="quadratic",
+        B=499,
         summary_digits=3,
     ):
         """
@@ -258,15 +281,17 @@ class WGCM(Comet):
         reg_yz.fit(Y=Ytr, X=Ztr)
         rYw = reg_yz.residuals(Y=Ytr, X=Ztr)
 
+        dim_X = 1 if X.ndim == 1 else X.shape[1]
         if mreg_xz is None:
-            mreg_xz = DefaultMultiRegression(reg_xz, dim=X.shape[1])
+            mreg_xz = DefaultMultiRegression(reg_xz, dim=dim_X)
         if mreg_wz is None:
-            mreg_wz = DefaultMultiRegression(reg_wz, dim=X.shape[1])
+            mreg_wz = DefaultMultiRegression(reg_wz, dim=dim_X)
 
         mreg_xz.fit(Y=Xtr, X=Ztr)
         rXw = mreg_xz.residuals(Y=Xtr, X=Ztr)
-        if rYw.ndim == 1:
-            rYw = rYw[:, np.newaxis]
+        # if rYw.ndim == 1:
+        #     rYw = rYw[:, np.newaxis]
+        rYw = _safe_atleast_2d(rYw)
         res_prod = rXw * rYw
         mreg_wz.fit(Y=res_prod, X=Ztr)
         self.W = np.sign(mreg_wz.predict(X=Zte))
@@ -277,7 +302,12 @@ class WGCM(Comet):
             self.summary_title = "Weighted TRAM-generalized covariance measure test"
         mreg_xz.fit(Y=Xte, X=Zte)
         self.rX = mreg_xz.residuals(Y=Xte, X=Zte)
-        self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX * self.W)
+        self.pval, self.stat, self.df = _gcm_test(rY=self.rY, 
+                                                  rX=self.rX * self.W, 
+                                                  alternative=alternative, 
+                                                  test_type=test_type, 
+                                                  B=B)
+        # self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX * self.W)
         self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
@@ -290,40 +320,121 @@ class WGCM(Comet):
         )
         print(f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
 
-    def plot(self):
+    # def plot(self):
+    #     """
+    #     Plot the residuals of X on Z regression versus Y on Z regression.
+    #     """
+    #     fig, ax = plt.subplots(1, 1)
+
+    #     def _scatter(rx):
+    #         ax.scatter(x=rx, y=self.rY)
+
+    #     np.apply_along_axis(_scatter, axis=0, arr=self.rX * self.W)
+    #     ax.set_xlabel("Weighted Residuals X | Z")
+    #     ax.set_ylabel("Residuals Y | Z")
+    #     return fig, ax
+
+    def plot(self, colors=None, **kwargs):
         """
         Plot the residuals of X on Z regression versus Y on Z regression.
         """
         fig, ax = plt.subplots(1, 1)
-
-        def _scatter(rx):
-            ax.scatter(x=rx, y=self.rY)
-
-        np.apply_along_axis(_scatter, axis=0, arr=self.rX * self.W)
-        ax.set_xlabel("Weighted Residuals X | Z")
+        if colors is None:
+            colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
+        s = kwargs.pop("s", 1.0)
+        rXW = _safe_atleast_2d(self.rX * self.W)
+        rY = _safe_atleast_2d(self.rY)
+        for k, (i, j) in enumerate(itertools.product(range(rXW.shape[1]), 
+                                                     range(rY.shape[1]))):
+            ax.scatter(rXW[:, i], 
+                       rY[:, j], 
+                       label = rf"$X^{{{i}}}$ and $Y^{{{j}}}$",
+                       color=colors[k % len(colors)],
+                       s = s,
+                       **kwargs)
+        ax.set_xlabel("Residuals X | Z")
         ax.set_ylabel("Residuals Y | Z")
+        ax.legend()
         return fig, ax
 
 
-def _gcm_test(rY, rX):
-    """
-    Computation of the GCM test based on residuals.
-    """
+# def _gcm_test(rY, rX):
+#     """
+#     Computation of the GCM test based on residuals.
+#     Note: currently only support rY of shape (nsample,)
+#     """
+#     nn = rY.shape[0]
+#     rY = _safe_squeeze(rY)
+#     rX = _safe_squeeze(rX)
+#     dim_rX = 1 if rX.ndim == 1 else rX.shape[1]
+#     if dim_rX > 1:
+#         rmat = rX * rY[:, np.newaxis]
+#         rmat_cm = rmat.mean(axis=0)[:, np.newaxis]
+#         sig = rmat.T.dot(rmat) / nn - rmat_cm.dot(rmat_cm.T)
+#         eig_val, eig_vec = np.linalg.eig(sig)
+#         sig_inv_half = eig_vec @ np.diag(eig_val ** (-1 / 2)) @ eig_vec.T
+#         tstat = sig_inv_half @ rmat.sum(axis=0) / np.sqrt(nn)
+#     else:
+#         rvec = rY * rX
+#         rvec_m = rvec.mean()
+#         tstat = np.sqrt(nn) * rvec_m / np.sqrt((rvec**2).mean() - rvec_m**2)
+#     stat = np.sum(tstat**2)
+#     pval = 1 - chi2(dim_rX).cdf(stat)
+#     return pval, stat, dim_rX
+
+def _gcm_test(rY, rX, alternative="two.sided", test_type="quadratic", B=499):
+
+    # Check inputs
+    alternatives = ["two.sided", "greater", "less"]
+    if alternative not in alternatives:
+        raise ValueError(f"Invalid alternative '{alternative}'. Must be one of {alternatives}.")
+    test_types = ["quadratic", "max"]
+    if test_type not in test_types:
+        raise ValueError(f"Invalid type '{test_type}'. Must be one of {test_types}.")
+    if rY.shape[0] != rX.shape[0]:
+        raise ValueError("rY and rX must have the same number of rows")
+
     nn = rY.shape[0]
-    rY = _reshape_to_vec(rY)
-    rX = _reshape_to_vec(rX)
+    # squeeze into vectors if 1d
+    rY = _safe_squeeze(rY, axis=1)
+    rX = _safe_squeeze(rX, axis=1)
     dim_rX = 1 if rX.ndim == 1 else rX.shape[1]
-    if dim_rX > 1:
-        rmat = rX * rY[:, np.newaxis]
-        rmat_cm = rmat.mean(axis=0)[:, np.newaxis]
-        sig = rmat.T.dot(rmat) / nn - rmat_cm.dot(rmat_cm.T)
-        eig_val, eig_vec = np.linalg.eig(sig)
-        sig_inv_half = eig_vec @ np.diag(eig_val ** (-1 / 2)) @ eig_vec.T
-        tstat = sig_inv_half @ rmat.sum(axis=0) / np.sqrt(nn)
-    else:
+    dim_rY = 1 if rY.ndim == 1 else rY.shape[1]
+    if dim_rX == 1 and dim_rY == 1:
         rvec = rY * rX
         rvec_m = rvec.mean()
-        tstat = np.sqrt(nn) * rvec_m / np.sqrt((rvec**2).mean() - rvec_m**2)
-    stat = np.sum(tstat**2)
-    pval = 1 - chi2(dim_rX).cdf(stat)
-    return pval, stat, dim_rX
+        stat = np.sqrt(nn) * rvec_m / np.sqrt((rvec**2).mean() - rvec_m**2)
+        if alternative == "two.sided":
+            pval = 2 * norm.cdf(-np.abs(stat))
+        elif alternative == "greater":
+            pval = 1 - norm.cdf(stat)
+        elif alternative == "less":
+            pval = norm.cdf(stat)
+    else:
+        rY = _safe_atleast_2d(rY)
+        rX = _safe_atleast_2d(rX)
+        tiled_rY = rY[:, np.repeat(np.arange(dim_rY), dim_rX)]
+        tiled_rX = rX[:, np.tile(np.arange(dim_rX), dim_rY)]
+        RR = tiled_rY * tiled_rX
+        if type == "quadratic":
+            Sig = (RR.T @ RR) / nn - np.outer(RR.mean(axis=0), RR.mean(axis=0))
+            eigvals, eigvecs = np.linalg.eigh(Sig)
+            if np.min(eigvals) < np.finfo(float).eps:
+                warnings.warn("`vcov` of test statistic is not invertible")
+            Sig_half = eigvecs @ np.diag(eigvals ** (-0.5)) @ eigvecs.T
+            tstat = siginvhalf @ RR.sum(axis=0) / np.sqrt(nn)
+            stat = np.sum(tstat ** 2)
+            pval = 1 - chi2(dim_rX * dim_rY).cdf(stat)
+        else:
+            tRR = RR.T
+            mRR = tRR.mean(axis=1)
+            vRR = np.mean(tRR**2, axis=1) - mRR**2
+            tRR_normalized = tRR / np.sqrt(vRR[:, np.newaxis])
+            stat = np.max(np.abs(mRR)) * np.sqrt(nn)
+            rand_mat = np.random.randn(nn, B)
+            sim = np.abs(tRR_normalized @ rand_mat)
+            sim_max = sim.max(axis=0) / np.sqrt(nn)
+            pval = (np.sum(sim_max >= stat) + 1) / (B + 1)
+
+    return pval, stat, dim_rX * dim_rY
+
