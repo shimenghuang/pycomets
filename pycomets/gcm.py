@@ -6,6 +6,7 @@ from .utils import _safe_atleast_2d, _safe_squeeze, _data_check, _split_sample
 from .regression import RegressionMethod, RF, DefaultMultiRegression, KRR
 import matplotlib.cm as cm
 import itertools
+import warnings
 
 
 class GCM(Comet):
@@ -422,7 +423,7 @@ def _gcm_test(rY, rX, alternative="two.sided", test_type="quadratic", B=499):
             if np.min(eigvals) < np.finfo(float).eps:
                 warnings.warn("`vcov` of test statistic is not invertible")
             Sig_half = eigvecs @ np.diag(eigvals ** (-0.5)) @ eigvecs.T
-            tstat = siginvhalf @ RR.sum(axis=0) / np.sqrt(nn)
+            tstat = Sig_half @ RR.sum(axis=0) / np.sqrt(nn)
             stat = np.sum(tstat ** 2)
             pval = 1 - chi2(dim_rX * dim_rY).cdf(stat)
         else:
