@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sksurv.linear_model import CoxPHSurvivalAnalysis
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import GridSearchCV
@@ -123,6 +122,11 @@ class RFC(RegressionMethod):
 
 class CoxPH(RegressionMethod):
     def __init__(self, **kwargs):
+        try:
+            from sksurv.linear_model import CoxPHSurvivalAnalysis
+        except ImportError as e:
+            raise ImportError("To use `CoxPH`, please install the 'surv' extra, e.g., pip install pycomets[surv]") from e
+
         model = CoxPHSurvivalAnalysis(**kwargs)
         super().__init__(model)
         self.resid_type = "score"

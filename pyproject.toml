@@ -9,3 +9,11 @@ description = "Covariance measure tests for conditional independence"
 authors = [{name = "Shimeng Huang", email = "dora.huang.sunshine@gmail.com"},
            {name = "Lucas Kook", email = "lucasheinrich.kook@gmail.com"}]
 license = {file = "LICENSE"}
+dependencies = ["numpy>=2.2",
+                "scipy>=1.15"]
+
+[project.optional-dependencies]
+reg = ["scikit-learn>=1.6"]
+surv = ["scikit-survival>=0.24.1"]
+plot = ["matplotlib>=3.10"]
+

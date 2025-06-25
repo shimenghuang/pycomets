@@ -1,12 +1,10 @@
+import itertools
+import warnings
 import numpy as np
 from scipy.stats import chi2, norm, spearmanr, pearsonr
-import matplotlib.pyplot as plt
 from .comet import Comet
 from .utils import _safe_atleast_2d, _safe_squeeze, _data_check, _split_sample
 from .regression import RegressionMethod, RF, DefaultMultiRegression, KRR
-import matplotlib.cm as cm
-import itertools
-import warnings
 
 
 class GCM(Comet):
@@ -124,6 +122,12 @@ class GCM(Comet):
         """
         Plot the residuals of X on Z regression versus Y on Z regression.
         """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+        except ImportError as e:
+            raise ImportError("To use `GCM.plot`, please install the 'plot' extra, e.g., pip install pycomets[plot]") from e
+        
         fig, ax = plt.subplots(1, 1)
         if colors is None:
             colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
@@ -343,6 +347,12 @@ class WGCM(Comet):
         """
         Plot the residuals of X on Z regression versus Y on Z regression.
         """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+        except ImportError as e:
+            raise ImportError("To use `WGCM.plot`, please install the 'plot' extra, e.g., pip install pycomets[plot]") from e
+        
         fig, ax = plt.subplots(1, 1)
         if colors is None:
             colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)

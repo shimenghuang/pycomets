@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
 from scipy.optimize import root_scalar
 from scipy.stats import norm
@@ -161,6 +159,12 @@ class PCM(Comet):
         """
         Plot the residuals of X on Z regression versus Y on Z regression.
         """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+        except ImportError as e:
+            raise ImportError("To use `PCM.plot`, please install the 'plot' extra, e.g., pip install pycomets[plot]") from e
+        
         fig, ax = plt.subplots(1, 1)
         if colors is None:
             colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
