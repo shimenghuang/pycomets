@@ -145,9 +145,7 @@ class CoxPH(RegressionMethod):
 
 
 class KRR(RegressionMethod, BaseEstimator):
-    def __init__(self, param_grid, **kwargs):
-        self.resid_type = "vanilla"
-        self.param_grid = param_grid
+    def __init__(self, **kwargs):
         kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
         kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
         model = GridSearchCV(KernelRidge(**kwargs_kr), self.param_grid, **kwargs_cv)
