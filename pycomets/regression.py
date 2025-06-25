@@ -145,12 +145,13 @@ class CoxPH(RegressionMethod):
 
 
 class KRR(RegressionMethod, BaseEstimator):
-    def __init__(self, **kwargs):
+    def __init__(self, param_grid, **kwargs):
+        self.resid_type = "vanilla"
+        self.param_grid = param_grid
         kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
         kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(KernelRidge(**kwargs_kr), **kwargs_cv)
+        model = GridSearchCV(KernelRidge(**kwargs_kr), self.param_grid, **kwargs_cv)
         super().__init__(model)
-        self.resid_type = "vanilla"
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
@@ -165,13 +166,14 @@ class KRR(RegressionMethod, BaseEstimator):
         return Y - self.model_fitted.predict(X=X)
 
 
-class XGB(RegressionMethod):
-    def __init__(self, **kwargs):
+class XGB(RegressionMethod, BaseEstimator):
+    def __init__(self, param_grid, **kwargs):
+        self.resid_type = "vanilla"
+        self.param_grid = param_grid 
         kwargs_xgb = _get_valid_args(XGBRegressor.__init__, kwargs)
         kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBRegressor(**kwargs_xgb), **kwargs_cv)
+        model = GridSearchCV(XGBRegressor(**kwargs_xgb), self.param_grid, **kwargs_cv)
         super().__init__(model)
-        self.resid_type = "vanilla"
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
@@ -186,14 +188,15 @@ class XGB(RegressionMethod):
         return Y - self.model_fitted.predict(X=X)
 
 
-class XGBC(RegressionMethod):
-    def __init__(self, **kwargs):
+class XGBC(RegressionMethod, BaseEstimator):
+    def __init__(self, param_grid, **kwargs):
+        self.resid_type = "vanilla"
+        self.param_grid = param_grid
         kwargs_xgb = _get_valid_args(XGBClassifier.__init__, kwargs)
         kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBClassifier(**kwargs_xgb), **kwargs_cv)
+        model = GridSearchCV(XGBClassifier(**kwargs_xgb), self.param_grid, **kwargs_cv)
         super().__init__(model)
-        self.resid_type = "vanilla"
-
+        
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
         return self
