@@ -1,9 +1,10 @@
 import numpy as np
+from sklearn.base import clone, BaseEstimator
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from xgboost import XGBRegressor, XGBClassifier
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import GridSearchCV
+from xgboost import XGBRegressor, XGBClassifier
 from .utils import _get_valid_args, _safe_atleast_2d
 
 
@@ -11,23 +12,19 @@ class DefaultMultiRegression:
     def __init__(self, model, dim):
         self.dim = dim
         self.model = model
-        self.models_fitted = None
+        self.models_fitted = []
 
     def fit(self, Y, X):
-        # if Y.ndim == 1:
-        #     Y = Y[:, np.newaxis]
         Y = _safe_atleast_2d(Y)
-        self.models_fitted = [
-            self.model.fit(Y=Y[:, ii], X=X) for ii in np.arange(self.dim)
-        ]
+        for ii in range(self.dim):
+            mod = clone(self.model)
+            self.models_fitted.append(mod.fit(Y=Y[:, ii], X=X))
         return self
 
     def predict(self, X):
         return np.column_stack([mod.predict(X=X) for mod in self.models_fitted])
 
     def residuals(self, Y, X):
-        # if Y.ndim == 1:
-        #     Y = Y[:, np.newaxis]
         Y = _safe_atleast_2d(Y)
         return np.column_stack(
             [
@@ -59,7 +56,7 @@ class RegressionMethod:
         raise NotImplementedError("Abstract method")
 
 
-class LM(RegressionMethod):
+class LM(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
         model = LinearRegression(**kwargs)
         super().__init__(model)
@@ -78,7 +75,7 @@ class LM(RegressionMethod):
         return Y - self.model_fitted.predict(X=X)
 
 
-class RF(RegressionMethod):
+class RF(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
         model = RandomForestRegressor(**kwargs)
         super().__init__(model)
@@ -97,7 +94,7 @@ class RF(RegressionMethod):
         return Y - self.model_fitted.predict(X=X)
 
 
-class RFC(RegressionMethod):
+class RFC(RegressionMethod, BaseEstimator):
     """
     Binary classification.
     """
@@ -147,7 +144,7 @@ class CoxPH(RegressionMethod):
         )
 
 
-class KRR(RegressionMethod):
+class KRR(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
         kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
         kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)

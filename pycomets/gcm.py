@@ -68,7 +68,7 @@ class GCM(Comet):
         alternative="two.sided",
         test_type="quadratic",
         B=499,
-        show_summary = True,
+        show_summary=True,
         summary_digits=3,
     ):
         """
@@ -96,7 +96,7 @@ class GCM(Comet):
             self.summary_title = "TRAM-Generalized covariance measure test"
         if mreg_xz is None:
             dim_X = 1 if X.ndim == 1 else X.shape[1]
-            mreg_xz = DefaultMultiRegression(reg_xz, dim_X)
+            mreg_xz = DefaultMultiRegression(model=reg_xz, dim=dim_X)
         mreg_xz.fit(Y=X, X=Z)
         # Note: here assumes that mreg_xz
         self.rX = mreg_xz.residuals(Y=X, X=Z)
@@ -431,13 +431,13 @@ def _gcm_test(rY, rX, alternative="two.sided", test_type="quadratic", B=499):
         tiled_rY = rY[:, np.repeat(np.arange(dim_rY), dim_rX)]
         tiled_rX = rX[:, np.tile(np.arange(dim_rX), dim_rY)]
         RR = tiled_rY * tiled_rX
-        if type == "quadratic":
+        if test_type == "quadratic":
             Sig = (RR.T @ RR) / nn - np.outer(RR.mean(axis=0), RR.mean(axis=0))
             eigvals, eigvecs = np.linalg.eigh(Sig)
             if np.min(eigvals) < np.finfo(float).eps:
                 warnings.warn("`vcov` of test statistic is not invertible")
-            Sig_half = eigvecs @ np.diag(eigvals ** (-0.5)) @ eigvecs.T
-            tstat = Sig_half @ RR.sum(axis=0) / np.sqrt(nn)
+            Sig_inv_half = eigvecs @ np.diag(eigvals ** (-0.5)) @ eigvecs.T
+            tstat = Sig_inv_half @ RR.sum(axis=0) / np.sqrt(nn)
             stat = np.sum(tstat ** 2)
             pval = 1 - chi2(dim_rX * dim_rY).cdf(stat)
         else:
