@@ -70,6 +70,7 @@ class GCM(Comet):
         alternative="two.sided",
         test_type="quadratic",
         B=499,
+        show_summary = True,
         summary_digits=3,
     ):
         """
@@ -106,7 +107,8 @@ class GCM(Comet):
                                                   alternative=alternative, 
                                                   test_type=test_type, 
                                                   B=B)
-        self.summary(digits=summary_digits)
+        if show_summary:
+            self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
         """
@@ -228,6 +230,7 @@ class WGCM(Comet):
         alternative="two.sided",
         test_type="quadratic",
         B=499,
+        show_summary=True, 
         summary_digits=3,
     ):
         """
@@ -309,7 +312,8 @@ class WGCM(Comet):
                                                   test_type=test_type, 
                                                   B=B)
         # self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX * self.W)
-        self.summary(digits=summary_digits)
+        if show_summary:
+            self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
         """

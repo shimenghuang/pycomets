@@ -67,6 +67,7 @@ class PCM(Comet):
         test_split=0.5,
         max_exp=5,
         rng=np.random.default_rng(),
+        show_summary=True, 
         summary_digits=3,
     ):
         """
@@ -138,7 +139,8 @@ class PCM(Comet):
             )
         self.stat = np.mean(self.stats)
         self.pval = 1 - norm().cdf(self.stat)
-        self.summary(digits=summary_digits)
+        if show_summary:
+            self.summary(digits=summary_digits)
 
     def summary(self, digits=3):
         print("\tProjected covariance measure test")
