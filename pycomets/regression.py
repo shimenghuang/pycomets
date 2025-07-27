@@ -1,11 +1,12 @@
 import numpy as np
-from sklearn.base import clone, BaseEstimator
+from sklearn.base import BaseEstimator
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBRegressor, XGBClassifier
 from .utils import _get_valid_args, _safe_atleast_2d
+import copy
 
 
 class DefaultMultiRegression:
@@ -17,7 +18,7 @@ class DefaultMultiRegression:
     def fit(self, Y, X):
         Y = _safe_atleast_2d(Y)
         for ii in range(self.dim):
-            mod = clone(self.model)
+            mod = copy.deepcopy(self.model)
             self.models_fitted.append(mod.fit(Y=Y[:, ii], X=X))
         return self
 
@@ -146,9 +147,11 @@ class CoxPH(RegressionMethod):
 
 class KRR(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
-        kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
-        kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(KernelRidge(**kwargs_kr), self.param_grid, **kwargs_cv)
+        self.kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
+        self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        # print(f"KernelRidge parameters: {self.kwargs_kr}")
+        # print(f"GridSearchCV parameters: {self.kwargs_cv}")
+        model = GridSearchCV(KernelRidge(**self.kwargs_kr), **self.kwargs_cv)
         super().__init__(model)
 
     def fit(self, Y, X):
