@@ -78,9 +78,9 @@ class LM(RegressionMethod, BaseEstimator):
 
 class RF(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
+        self.resid_type = "vanilla"
         model = RandomForestRegressor(**kwargs)
         super().__init__(model)
-        self.resid_type = "vanilla"
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
@@ -101,9 +101,9 @@ class RFC(RegressionMethod, BaseEstimator):
     """
 
     def __init__(self, **kwargs):
+        self.resid_type = "vanilla"
         model = RandomForestClassifier(**kwargs)
         super().__init__(model)
-        self.resid_type = "vanilla"
 
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
@@ -120,15 +120,14 @@ class RFC(RegressionMethod, BaseEstimator):
 
 class CoxPH(RegressionMethod):
     def __init__(self, **kwargs):
+        self.resid_type = "score"
         try:
             from sksurv.linear_model import CoxPHSurvivalAnalysis
         except ImportError as e:
             raise ImportError("To use `CoxPH`, please install the 'surv' extra, e.g., pip install pycomets[surv]") from e
-
         model = CoxPHSurvivalAnalysis(**kwargs)
         super().__init__(model)
-        self.resid_type = "score"
-
+        
     def fit(self, Y, X):
         self.model_fitted = self.model.fit(X=X, y=Y)
         return self
@@ -147,10 +146,9 @@ class CoxPH(RegressionMethod):
 
 class KRR(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
+        self.resid_type = "vanilla"
         self.kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
         self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        # print(f"KernelRidge parameters: {self.kwargs_kr}")
-        # print(f"GridSearchCV parameters: {self.kwargs_cv}")
         model = GridSearchCV(KernelRidge(**self.kwargs_kr), **self.kwargs_cv)
         super().__init__(model)
 
@@ -171,9 +169,9 @@ class XGB(RegressionMethod, BaseEstimator):
     def __init__(self, param_grid, **kwargs):
         self.resid_type = "vanilla"
         self.param_grid = param_grid 
-        kwargs_xgb = _get_valid_args(XGBRegressor.__init__, kwargs)
-        kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBRegressor(**kwargs_xgb), self.param_grid, **kwargs_cv)
+        self.kwargs_xgb = _get_valid_args(XGBRegressor.__init__, kwargs)
+        self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        model = GridSearchCV(XGBRegressor(**self.kwargs_xgb), self.param_grid, **self.kwargs_cv)
         super().__init__(model)
 
     def fit(self, Y, X):
@@ -193,9 +191,9 @@ class XGBC(RegressionMethod, BaseEstimator):
     def __init__(self, param_grid, **kwargs):
         self.resid_type = "vanilla"
         self.param_grid = param_grid
-        kwargs_xgb = _get_valid_args(XGBClassifier.__init__, kwargs)
-        kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBClassifier(**kwargs_xgb), self.param_grid, **kwargs_cv)
+        self.kwargs_xgb = _get_valid_args(XGBClassifier.__init__, kwargs)
+        self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        model = GridSearchCV(XGBClassifier(**self.kwargs_xgb), self.param_grid, **self.kwargs_cv)
         super().__init__(model)
         
     def fit(self, Y, X):
