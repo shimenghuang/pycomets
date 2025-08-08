@@ -23,13 +23,21 @@ gcm.test(Y, X, Z, LM(), LM())
 fig, ax = gcm.plot()
 
 gcm = GCM()
-gcm.test(Y, X, Z, LM(), None, RF(random_state=1))
+gcm.test(Y, X, Z, LM(), RF(random_state=1, param_grid={'max_depth': [2, 5]}))
+fig, ax = gcm.plot()
+
+gcm = GCM()
+gcm.test(Y, X, Z, KRR(), KRR())
 fig, ax = gcm.plot()
 
 gcm = GCM()
 gcm.test(Y, X, Z,
          KRR(kernel="rbf", param_grid={'alpha': [0.1, 1, 10]}),
          KRR(param_grid={'kernel': ('linear', 'rbf'), 'alpha': [0.1, 1]}))
+fig, ax = gcm.plot()
+
+gcm = GCM()
+gcm.test(Y, X, Z, XGB(), XGB())
 fig, ax = gcm.plot()
 
 gcm = GCM()

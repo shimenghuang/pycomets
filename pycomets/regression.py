@@ -79,11 +79,21 @@ class LM(RegressionMethod, BaseEstimator):
 class RF(RegressionMethod, BaseEstimator):
     def __init__(self, **kwargs):
         self.resid_type = "vanilla"
-        model = RandomForestRegressor(**kwargs)
+        # model = RandomForestRegressor(**kwargs)
+        self.kwargs_rf = _get_valid_args(KernelRidge.__init__, kwargs)
+        self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        self.cv = len(self.kwargs_cv) > 0
+        if  self.cv:
+            model = GridSearchCV(RandomForestRegressor(**self.kwargs_rf), **self.kwargs_cv)
+        else:
+            model = RandomForestRegressor(**self.kwargs_rf)
         super().__init__(model)
 
     def fit(self, Y, X):
-        self.model_fitted = self.model.fit(X=X, y=Y)
+        if self.cv:
+            self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        else:
+            self.model_fitted = self.model.fit(X=X, y=Y)
         return self
 
     def predict(self, X):
@@ -102,11 +112,21 @@ class RFC(RegressionMethod, BaseEstimator):
 
     def __init__(self, **kwargs):
         self.resid_type = "vanilla"
-        model = RandomForestClassifier(**kwargs)
+        # model = RandomForestClassifier(**kwargs)
+        self.kwargs_rf = _get_valid_args(KernelRidge.__init__, kwargs)
+        self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
+        self.cv = len(self.kwargs_cv) > 0
+        if self.cv:
+            model = GridSearchCV(RandomForestClassifier(**self.kwargs_rf), **self.kwargs_cv)
+        else:
+            model = RandomForestClassifier(**self.kwargs_rf)
         super().__init__(model)
 
     def fit(self, Y, X):
-        self.model_fitted = self.model.fit(X=X, y=Y)
+        if self.cv:
+            self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        else:
+            self.model_fitted = self.model.fit(X=X, y=Y)
         return self
 
     def predict(self, X):
@@ -149,11 +169,18 @@ class KRR(RegressionMethod, BaseEstimator):
         self.resid_type = "vanilla"
         self.kwargs_kr = _get_valid_args(KernelRidge.__init__, kwargs)
         self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(KernelRidge(**self.kwargs_kr), **self.kwargs_cv)
+        self.cv = len(self.kwargs_cv) > 0
+        if self.cv:
+            model = GridSearchCV(KernelRidge(**self.kwargs_kr), **self.kwargs_cv) 
+        else:
+            model = KernelRidge(**self.kwargs_kr)
         super().__init__(model)
 
     def fit(self, Y, X):
-        self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        if self.cv:
+            self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        else:
+            self.model_fitted = self.model.fit(X=X, y=Y)
         return self
 
     def predict(self, X):
@@ -166,16 +193,22 @@ class KRR(RegressionMethod, BaseEstimator):
 
 
 class XGB(RegressionMethod, BaseEstimator):
-    def __init__(self, param_grid, **kwargs):
+    def __init__(self, **kwargs):
         self.resid_type = "vanilla"
-        self.param_grid = param_grid 
         self.kwargs_xgb = _get_valid_args(XGBRegressor.__init__, kwargs)
         self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBRegressor(**self.kwargs_xgb), self.param_grid, **self.kwargs_cv)
+        self.cv = len(self.kwargs_cv) > 0
+        if self.cv:
+            model = GridSearchCV(XGBRegressor(**self.kwargs_xgb), **self.kwargs_cv)
+        else:
+            model = XGBRegressor(**self.kwargs_xgb)
         super().__init__(model)
 
     def fit(self, Y, X):
-        self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        if self.cv:
+            self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        else:
+            self.model_fitted = self.model.fit(X=X, y=Y)
         return self
 
     def predict(self, X):
@@ -188,16 +221,22 @@ class XGB(RegressionMethod, BaseEstimator):
 
 
 class XGBC(RegressionMethod, BaseEstimator):
-    def __init__(self, param_grid, **kwargs):
+    def __init__(self, **kwargs):
         self.resid_type = "vanilla"
-        self.param_grid = param_grid
         self.kwargs_xgb = _get_valid_args(XGBClassifier.__init__, kwargs)
         self.kwargs_cv = _get_valid_args(GridSearchCV.__init__, kwargs)
-        model = GridSearchCV(XGBClassifier(**self.kwargs_xgb), self.param_grid, **self.kwargs_cv)
+        self.cv = len(self.kwargs_cv) > 0
+        if self.cv:
+            model = GridSearchCV(XGBClassifier(**self.kwargs_xgb), **self.kwargs_cv)
+        else:
+            model = XGBClassifier(**self.kwargs_xgb)
         super().__init__(model)
         
     def fit(self, Y, X):
-        self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        if self.cv:
+            self.model_fitted = self.model.fit(X=X, y=Y).best_estimator_
+        else:
+            self.model_fitted = self.model.fit(X=X, y=Y)
         return self
 
     def predict(self, X):
