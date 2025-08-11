@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.metrics.pairwise import pairwise_distances
+import numbers
 
 
 # def _reshape_to_vec(x):
@@ -85,3 +87,15 @@ def _cov_to_cor(sig):
     stds_inv = 1/stds
     cor = stds_inv * sig * stds_inv
     return cor
+
+def _is_numeric(x):
+    return isinstance(x, numbers.Number)
+
+def _compute_median_heuristic(z):
+    """
+    Computes the median pairwise distance over z.
+    """
+    dists = pairwise_distances(z, metric='euclidean')
+    dists_no_diag = dists[np.triu_indices_from(dists, k=1)]
+    median = np.median(dists_no_diag)
+    return median.item()

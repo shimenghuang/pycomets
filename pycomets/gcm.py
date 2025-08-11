@@ -1,9 +1,10 @@
 import itertools
 import warnings
 import numpy as np
+from sklearn.metrics.pairwise import rbf_kernel
 from scipy.stats import chi2, norm, spearmanr, pearsonr
 from .comet import Comet
-from .utils import _safe_atleast_2d, _safe_squeeze, _data_check, _split_sample
+from .utils import _safe_atleast_2d, _safe_squeeze, _data_check, _split_sample, _compute_median_heuristic, _is_numeric
 from .regression import RegressionMethod, RF, DefaultMultiRegression, KRR
 
 
@@ -231,7 +232,6 @@ class WGCM(Comet):
         mreg_wz=None,
         test_split=0.5,
         rng=np.random.default_rng(),
-        alternative="two.sided",
         test_type="quadratic",
         B=499,
         show_summary=True, 
@@ -312,7 +312,7 @@ class WGCM(Comet):
         self.rX = mreg_xz.residuals(Y=Xte, X=Zte)
         self.pval, self.stat, self.df = _gcm_test(rY=self.rY, 
                                                   rX=self.rX * self.W, 
-                                                  alternative=alternative, 
+                                                  alternative="greater", 
                                                   test_type=test_type, 
                                                   B=B)
         # self.pval, self.stat, self.df = _gcm_test(self.rY, self.rX * self.W)
@@ -328,20 +328,6 @@ class WGCM(Comet):
             f"X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}"
         )
         print(f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
-
-    # def plot(self):
-    #     """
-    #     Plot the residuals of X on Z regression versus Y on Z regression.
-    #     """
-    #     fig, ax = plt.subplots(1, 1)
-
-    #     def _scatter(rx):
-    #         ax.scatter(x=rx, y=self.rY)
-
-    #     np.apply_along_axis(_scatter, axis=0, arr=self.rX * self.W)
-    #     ax.set_xlabel("Weighted Residuals X | Z")
-    #     ax.set_ylabel("Residuals Y | Z")
-    #     return fig, ax
 
     def plot(self, colors=None, **kwargs):
         """
@@ -367,35 +353,202 @@ class WGCM(Comet):
                        color=colors[k % len(colors)],
                        s = s,
                        **kwargs)
-        ax.set_xlabel("Residuals X | Z")
+        ax.set_xlabel("Weighted residuals X | Z")
         ax.set_ylabel("Residuals Y | Z")
         ax.legend()
         return fig, ax
+    
 
+class KGCM(Comet):
+    """
+    Kernelised generalised covariance measure (WGCM).
 
-# def _gcm_test(rY, rX):
-#     """
-#     Computation of the GCM test based on residuals.
-#     Note: currently only support rY of shape (nsample,)
-#     """
-#     nn = rY.shape[0]
-#     rY = _safe_squeeze(rY)
-#     rX = _safe_squeeze(rX)
-#     dim_rX = 1 if rX.ndim == 1 else rX.shape[1]
-#     if dim_rX > 1:
-#         rmat = rX * rY[:, np.newaxis]
-#         rmat_cm = rmat.mean(axis=0)[:, np.newaxis]
-#         sig = rmat.T.dot(rmat) / nn - rmat_cm.dot(rmat_cm.T)
-#         eig_val, eig_vec = np.linalg.eig(sig)
-#         sig_inv_half = eig_vec @ np.diag(eig_val ** (-1 / 2)) @ eig_vec.T
-#         tstat = sig_inv_half @ rmat.sum(axis=0) / np.sqrt(nn)
-#     else:
-#         rvec = rY * rX
-#         rvec_m = rvec.mean()
-#         tstat = np.sqrt(nn) * rvec_m / np.sqrt((rvec**2).mean() - rvec_m**2)
-#     stat = np.sum(tstat**2)
-#     pval = 1 - chi2(dim_rX).cdf(stat)
-#     return pval, stat, dim_rX
+    The kernelised generalised covariance measure test tests whether a weighted
+    version of the conditional covariance of Y and X given Z is zero.
+
+    Parameters:
+    ----------
+
+    Attributes:
+    ----------
+    pval : float
+        The p-value of the `hypothesis`.
+
+    stat : float
+        The value of the test statistic.
+
+    df : int
+        The degree of freedom.
+
+    rY : array of shape (n_sample,)
+        Residuals of the Y on Z regression.
+
+    rX : array of shape (n_sample, n_feature_x)
+        Residuals of the X on Z regression.
+
+    W : array of shape (n_sample, n_feature_x)
+        Estimated weight matrix.
+
+    summary_title : string
+        The string "Weighted generalized covariance measure test".
+
+    hypothesis : string
+        String specifying the null hypothesis.
+
+    References:
+    ----------
+    Scheidegger, C., Hörrmann, J., & Bühlmann, P. (2022). The weighted
+    generalised covariance measure. Journal of Machine Learning Research,
+    23(273), 1-68.
+    """
+
+    def __init__(self):
+        self.pval = None
+        self.stat = None
+        self.df = None
+        self.rY = None
+        self.rX = None
+        self.K = None
+        self.summary_title = "Kernel generalized covariance measure test"
+        self.hypothesis = "E[w(Z) cov(Y, X | Z)]"
+
+    def test(
+        self,
+        Y,
+        X,
+        Z,
+        reg_yz: RegressionMethod = RF(),
+        reg_xz: RegressionMethod = RF(),
+        mreg_xz=None,
+        bandwith=None,
+        rng=np.random.default_rng(),
+        B=499,
+        show_summary=True, 
+        summary_digits=3,
+    ):
+        """
+        Computation of the WGCM test.
+
+        Parameters
+        ----------
+        Y : array of shape (n_sample,) or (n_sample, 1)
+            Response values.
+
+        X : array of shape (n_sample, n_feature_x)
+            Values of the first set of covariates.
+
+        Z : array of shape (n_sample, n_feature_z)
+            Values of the second set of covariates.
+
+        reg_yz : RegressionMethod
+            Regression method for Y on Z regression. Default to be `RF()`.
+
+        reg_xz : RegressionMethod
+            Regression method for X on Z regression. Default to be `RF()`.
+
+        reg_wz : RegressionMethod
+            Regression method for the residual product on Z regression. Default
+            to be `KRR(kernel="rbf", param_grid={'alpha': [0.1, 1]})`.
+
+        mreg_xz : RegressionMethod
+            Multivarite regression method for X on Z regression. If `None`,
+            `DefaultMultiRegression` is used as a wrapper for the given
+            `reg_xz`.
+
+        mreg_wz : RegressionMethod
+            Multivarite regression method for the residual product on Z Z
+            regression. If `None`, `DefaultMultiRegression` is used as a wrapper
+            for the given `reg_xz`.
+
+        test_split : float
+            Relative size of test split.
+
+        rng : numpy.random._generator.Generator
+            Random number generator.
+
+        summary_digits : int
+            Number of digits to display in the printed summary.
+
+        Returns
+        -------
+        """
+        Y, X, Z = _data_check(Y, X, Z)
+        if Y.ndim > 1:
+            raise ValueError(f'KGCM does not support multi-dimensional Y.')
+        reg_yz.fit(Y=Y, X=Z)
+        self.rY = reg_yz.residuals(Y=Y, X=Z)
+        self.rY = _safe_atleast_2d(self.rY)
+
+        dim_X = 1 if X.ndim == 1 else X.shape[1]
+        if mreg_xz is None:
+            mreg_xz = DefaultMultiRegression(reg_xz, dim=dim_X)
+        mreg_xz.fit(Y=X, X=Z)
+        self.rX = mreg_xz.residuals(Y=X, X=Z)
+        self.rX = _safe_atleast_2d(self.rX)
+
+        if bandwith is None:
+            bandwith = _compute_median_heuristic(Z)
+        elif not _is_numeric(bandwith):
+            raise ValueError("Supply valid bandwith (numeric value, or None corresponds to the median heuristic)")
+        
+        res_prod = self.rX * self.rY
+        self.K = rbf_kernel(Z, gamma=1.0/(2 * bandwith ** 2))
+        self.stat = (1.0/Z.shape[0] * res_prod.T @ self.K @ res_prod).item()
+        smpl = np.zeros(B)
+        for bb in range(B):
+            rand_mat = _safe_atleast_2d(rng.choice([-1,1], size=Z.shape[0]))
+            flip_res_prod = res_prod * rand_mat
+            smpl[bb] = (1.0/Z.shape[0] * flip_res_prod.T @ self.K @ flip_res_prod).item()
+
+        self.pval = (1 + np.sum(smpl > self.stat)) / (1 + B)
+        
+        if reg_yz.resid_type == "score":
+            self.hypothesis = "E[w(Z) cov(rY, X | Z)]"
+            self.summary_title = "Kernel TRAM-generalized covariance measure test"
+
+        if show_summary:
+            self.summary(digits=summary_digits)
+
+    def summary(self, digits=3):
+        """
+        Print the test results.
+        """
+        print(f"\t{self.summary_title}")
+        print(
+            f"X-squared = {self.stat:.{digits}f}, df = {self.df}, p-value = {self.pval:.{digits}f}"
+        )
+        print(f"alternative hypothesis: true {self.hypothesis} is not equal to 0")
+
+    def plot(self, colors=None, **kwargs):
+        """
+        Plot the residuals of X on Z regression versus Y on Z regression.
+        """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+        except ImportError as e:
+            raise ImportError("To use `KGCM.plot`, please install the 'plot' extra, e.g., pip install pycomets[plot]") from e
+        
+        fig, ax = plt.subplots(1, 1)
+        if colors is None:
+            colors = cm.tab20.colors  # or cm.get_cmap("tab10")(i)
+        s = kwargs.pop("s", 1.0)
+        rXW = _safe_atleast_2d(self.K @ self.rX)
+        rY = _safe_atleast_2d(self.rY)
+        for k, (i, j) in enumerate(itertools.product(range(rXW.shape[1]), 
+                                                     range(rY.shape[1]))):
+            ax.scatter(rXW[:, i], 
+                       rY[:, j], 
+                       label = rf"$X^{{{i}}}$ and $Y^{{{j}}}$",
+                       color=colors[k % len(colors)],
+                       s = s,
+                       **kwargs)
+        ax.set_xlabel("Weighted esiduals X | Z")
+        ax.set_ylabel("Residuals Y | Z")
+        ax.legend()
+        return fig, ax
+    
+
 
 def _gcm_test(rY, rX, alternative="two.sided", test_type="quadratic", B=499):
 

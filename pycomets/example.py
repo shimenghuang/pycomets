@@ -2,7 +2,7 @@
 # libs
 # ##
 import numpy as np
-from pycomets.gcm import GCM, WGCM
+from pycomets.gcm import GCM, WGCM, KGCM
 from pycomets.pcm import PCM
 from pycomets.regression import DefaultMultiRegression, LM, RF, RFC, CoxPH, KRR, XGB, XGBC
 from sksurv.datasets import load_whas500
@@ -53,6 +53,10 @@ fig, ax = pcm.plot()
 wgcm = WGCM()
 wgcm.test(Y, X, Z, RF(random_state=1), RF(random_state=1), rng=rng)
 fig, ax = wgcm.plot()
+
+kgcm = KGCM()
+kgcm.test(Y, X, Z, LM(), LM(), rng=rng)
+fig, ax = kgcm.plot()
 
 # %%
 # DGP 2: regression X -> Z <- Y
