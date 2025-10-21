@@ -568,7 +568,8 @@ def _gcm_test(rY, rX, alternative="two.sided", test_type="quadratic", B=499):
     rX = _safe_squeeze(rX, axis=1)
     dim_rX = 1 if rX.ndim == 1 else rX.shape[1]
     dim_rY = 1 if rY.ndim == 1 else rY.shape[1]
-    if dim_rX == 1 and dim_rY == 1:
+
+    if dim_rX == 1 and dim_rY == 1 and test_type == "quadratic":
         rvec = rY * rX
         rvec_m = rvec.mean()
         stat = np.sqrt(nn) * rvec_m / np.sqrt((rvec**2).mean() - rvec_m**2)
