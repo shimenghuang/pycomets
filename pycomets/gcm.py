@@ -157,13 +157,18 @@ class GCM(Comet):
             one of "pearson" or "spearman"
         """
         dim_rX = 1 if self.rX.ndim == 1 else self.rX.shape[1]
-        cor = np.zeros(dim_rX)
+        dim_rY = 1 if self.rY.ndim == 1 else self.rY.shape[1]
+        rX = _safe_atleast_2d(self.rX)
+        rY = _safe_atleast_2d(self.rY)
+        cor = np.zeros((dim_rX, dim_rY))
         if type == "pearson":
             for ii in np.arange(dim_rX):
-                cor[ii] = pearsonr(self.rX[:, ii], self.rY).statistic
+                for jj in np.arange(dim_rY):
+                    cor[ii, jj] = pearsonr(rX[:, ii], rY[:, jj]).statistic
         elif type == "spearman":
             for ii in np.arange(dim_rX):
-                cor[ii] = spearmanr(self.rX[:, ii], self.rY).statistic
+                for jj in np.arange(dim_rY):
+                    cor[ii, jj] = spearmanr(rX[:, ii], rY[:, jj]).statistic
         return cor
 
 
