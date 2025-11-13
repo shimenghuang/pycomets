@@ -1,7 +1,7 @@
 
 
 
-# Covariance Measure Tests (COMETs) in Python <img src='pycomets/inst/pycomets-pkg.png' align="right" height="138.5" />
+# Covariance Measure Tests (COMETs) in Python <img src='pycomets/inst/pycomets-pkg.png' align="right" height="135" />
 
 The Generalised [1] and Projected [2] Covariance Measure tests (GCM, PCM) can be
 used to test conditional independence between a real-valued response $Y$ and
@@ -18,7 +18,7 @@ variable significance testing and modality selection on real-world data can be
 found in [3].
 
 
-```python
+``` python
 n = 150
 rng = np.random.default_rng(1)
 X = rng.normal(0, 1, (n, 2))
@@ -32,38 +32,32 @@ $Y$ on $Z$ and $X$ on $Z$ regressions can be investigated by calling
 `pcm.plot()` (not shown here).
 
 
-```python
+``` python
 gcm = GCM()
 gcm.test(Y, X, Z)
+# fig, ax = gcm.plot()
 ```
 
 ```
 ## 	Generalized covariance measure test
-## X-squared = 1.523, df = 2, p-value = 0.467
+## X-squared = 1.421, df = 2, p-value = 0.491
 ## alternative hypothesis: true E[cov(Y, X | Z)] is not equal to 0
-```
-
-```python
-# fig, ax = gcm.plot()
 ```
 
 The PCM test can be run likewise. The PCM test correctly rejects the null
 hypothesis of conditional independence in this example.
 
 
-```python
+``` python
 pcm = PCM()
 pcm.test(Y, X, Z, rng=rng)
+# fig, ax = pcm.plot()
 ```
 
 ```
 ## 	Projected covariance measure test
-## Z = 2.862, p-value = 0.002
+## Z = 3.016, p-value = 0.001
 ## alternative hypothesis: true E[Y | X, Z] is not equal to E[Y | Z]
-```
-
-```python
-# fig, ax = pcm.plot()
 ```
 
 Different regression methods can supplied for both GCM and PCM tests using the
@@ -76,7 +70,7 @@ code chunk below, we use a KRR for both $Y$ on $Z$ and $X$ on $Z$ with different
 kernel choices and grids for hyperparameter tuning.
 
 
-```python
+``` python
 gcm = GCM()
 gcm.test(Y, X, Z,
          KRR(kernel="rbf", param_grid={'alpha': [0.1, 1, 10]}),
@@ -91,10 +85,18 @@ gcm.test(Y, X, Z,
 
 # Installation
 
-The development version of `pycomets` can be installed using:
+The development version of `pycomets` can be installed from github:
 
 ```python
-python -m pip install -e <path-to-pycomets> 
+pip install git+https://github.com/shimenghuang/pycomets.git
+```
+
+or by cloning the repository and installing it in editable mode:
+
+```python
+git clone https://github.com/shimenghuang/pycomets.git
+cd pycomets
+pip install -e .
 ```
 
 <!-- A stable version of `pycomets` can be installed from PyPI via: -->

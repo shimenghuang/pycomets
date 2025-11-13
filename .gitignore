@@ -161,4 +161,7 @@ cython_debug/
 .Rproj.user
 *.Rproj
 
-Makefile
+# Makefile specific for me to render the README.md file
+# make readme inside the inst folder
+pycomets/inst/Makefile
+
